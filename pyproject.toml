@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "trade-trace"
+version = "0.1.0"
+description = "Powerful and small Python CLI tool to parse important info from Binance!"
+authors = ["Kirill Bezuglyi <fidelicura@gmail.com>"]
+license = "GNU-AGPLv3"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
