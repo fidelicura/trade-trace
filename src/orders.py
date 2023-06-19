@@ -11,10 +11,15 @@ from general import calculate_time_delta
 
 
 def parse_json(client: Client) -> DataFrame:
-    response = client.c2c_trade_history("BUY")
-    df = pd.json_normalize(response, "data")
+    dfs = []
+    for trade_type in ("BUY", "SELL"):
+        response = client.c2c_trade_history(trade_type)
+        df = pd.json_normalize(response, "data")
+        dfs.append(df)
 
-    return df
+    result = pd.concat(dfs, ignore_index=True)
+    return result
+
 
 def create_table(df) -> DataFrame:
     df["createTime"] = (df["createTime"] / 1000).astype(int)
@@ -26,7 +31,6 @@ def create_table(df) -> DataFrame:
     df["amount"] = df["amount"].astype(float) - (df["amount"].astype(float) / 100 * 0.1)
 
     df.drop(df.loc[df["orderStatus"] != "COMPLETED"].index, inplace=True)
-    # df["orderStatus"] = df["orderStatus"].str.replace("COMPLETED", "Завершён")
 
     return df
 
@@ -57,7 +61,7 @@ def drop_unused(df) -> DataFrame:
     return df
 
 def table_to_excel(df: DataFrame, start: DateTime, end: DateTime) -> str:
-    file_name = "result.xlsx"
+    file_name = "orders.xlsx"
     sheet_name = f"{start} - {end}"
 
     df.to_excel(file_name, sheet_name, False)
@@ -83,7 +87,7 @@ def prettify_sheet(sheet: Workbook):
                 sheet[f"{letter}{i}"].number_format = cellFormat[2]
     
     try:
-        book.save("result.xlsx")
+        book.save("orders.xlsx")
         print("Result spreadsheet is ready!")
     except Exception as err:
         logging.info("unable to save results to output xlsx")
