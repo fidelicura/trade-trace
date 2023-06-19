@@ -13,7 +13,7 @@ class WrongVariant(Exception):
 
 
 def main():
-    print("It's time to choose!\n1 - orders only;\n2 - arbitrage only\n3 - both;")
+    print("It's time to choose!\n1 - orders only;\n2 - arbitrage only;\n3 - both;")
 
     try:
         user_req = int(input())

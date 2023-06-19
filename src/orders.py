@@ -5,12 +5,13 @@ from openpyxl.workbook import Workbook
 from openpyxl.styles.numbers import BUILTIN_FORMATS as cellFormat
 from binance.error import ClientError
 from binance.spot import Spot as Client
-from binance.lib.utils import config_logging
-from general import calculate_time_delta
+# from binance.lib.utils import config_logging
+from src.general import calculate_time_delta, logger
+from datetime import datetime
 
 
 
-def parse_json(client: Client) -> DataFrame:
+def parse_json(client: Client) -> pd.DataFrame:
     dfs = []
     for trade_type in ("BUY", "SELL"):
         response = client.c2c_trade_history(trade_type)
@@ -21,7 +22,7 @@ def parse_json(client: Client) -> DataFrame:
     return result
 
 
-def create_table(df) -> DataFrame:
+def create_table(df) -> pd.DataFrame:
     df["createTime"] = (df["createTime"] / 1000).astype(int)
     df["createTime"] = pd.to_datetime(df["createTime"], unit="s")
 
@@ -34,7 +35,7 @@ def create_table(df) -> DataFrame:
 
     return df
 
-def rename_table(df) -> DataFrame:
+def rename_table(df) -> pd.DataFrame:
     df.rename(columns={
         "orderNumber": "Order Number",
         "orderStatus": "Order Status",
@@ -46,7 +47,7 @@ def rename_table(df) -> DataFrame:
 
     return df
 
-def drop_unused(df) -> DataFrame:
+def drop_unused(df) -> pd.DataFrame:
     df.drop(columns=[
         "advertisementRole",
         "fiatSymbol",
@@ -60,7 +61,7 @@ def drop_unused(df) -> DataFrame:
 
     return df
 
-def table_to_excel(df: DataFrame, start: DateTime, end: DateTime) -> str:
+def table_to_excel(df: pd.DataFrame, start: datetime, end: datetime) -> str:
     file_name = "orders.xlsx"
     sheet_name = f"{start} - {end}"
 

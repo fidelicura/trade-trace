@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta
-from logging import logging, INFO
+from logging import getLogger, INFO
 from os import getenv
 
 
 
-configure_logging(logging, INFO)
+logger = getLogger("binance_app")
+logger.setLevel(INFO)
+
 
 def read_keys() -> (str, str):
     try:
