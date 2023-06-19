@@ -1,4 +1,5 @@
 from src.orders import process_orders
+from src.arbitrage import process_arbitrage
 
 
 
