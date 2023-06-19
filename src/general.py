@@ -5,6 +5,11 @@ from logging import logging, INFO
 
 configure_logging(logging, INFO)
 
+
+def read_keys():
+    API_KEY = 
+    ADD_KEY = 
+
 def calculate_time_delta():
     time_format = "%Y.%m.%d"
     now = datetime.now()
