@@ -1,20 +1,22 @@
+import os
 import pandas as pd
 import openpyxl as opyx
 from openpyxl.styles import Alignment
 from openpyxl.workbook import Workbook
+from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.styles.numbers import BUILTIN_FORMATS as cellFormat
 from binance.error import ClientError
 from binance.spot import Spot as Client
-# from binance.lib.utils import config_logging
-from src.general import calculate_time_delta, logger
+from src.general import calculate_time_delta, logger, read_keys
 from datetime import datetime
+from typing import Tuple
 
 
 
 def parse_json(client: Client) -> pd.DataFrame:
     dfs = []
     for trade_type in ("BUY", "SELL"):
-        response = client.c2c_trade_history(trade_type)
+        response = client.c2c_trade_history(tradeType=trade_type)
         df = pd.json_normalize(response, "data")
         dfs.append(df)
 
@@ -31,13 +33,20 @@ def create_table(df) -> pd.DataFrame:
 
     df["amount"] = df["amount"].astype(float) - (df["amount"].astype(float) / 100 * 0.1)
 
-    df.drop(df.loc[df["orderStatus"] != "COMPLETED"].index, inplace=True)
+    user_choice = str(input("Write completed orders only? (y/n): "))
+    if user_choice == "y":
+        df.drop(df.loc[df["orderStatus"] != "COMPLETED"].index, inplace=True)
+    elif user_choice == "n":
+        pass
+    else:
+        raise ValueError("Invalid input. We have only completed and uncompleted orders, so `y` or `n`")
 
     return df
 
-def rename_table(df) -> pd.DataFrame:
+def rename_table(df):
     df.rename(columns={
         "orderNumber": "Order Number",
+        "tradeType": "Trade Type",
         "orderStatus": "Order Status",
         "createTime": "Time",
         "amount": "Sold Currency",
@@ -45,67 +54,68 @@ def rename_table(df) -> pd.DataFrame:
         "unitPrice": "Exchange Rate"
     }, inplace=True)
 
-    return df
-
-def drop_unused(df) -> pd.DataFrame:
+def drop_unused(df):
     df.drop(columns=[
         "advertisementRole",
         "fiatSymbol",
         "counterPartNickName",
         "commission",
-        "tradeType",
         "asset",
         "fiat",
         "advNo"
-    ])
-
-    return df
+    ], inplace=True)
 
 def table_to_excel(df: pd.DataFrame, start: datetime, end: datetime) -> str:
-    file_name = "orders.xlsx"
+    folder_name = "output"
     sheet_name = f"{start} - {end}"
 
+    if not os.path.exists(folder_name):
+        os.makedirs(folder_name)
+
+    file_name = "output/orders.xlsx"
     df.to_excel(file_name, sheet_name, False)
 
     return file_name
 
 
-def load_sheet(file_name: str) -> Workbook:
-    book = opyx.load_workbook(filename="result.xlsx")
+def load_sheet(file_name: str) -> Worksheet:
+    book = opyx.load_workbook(filename="output/orders.xlsx")
     sheet = book.active
 
     return sheet
 
-def prettify_sheet(sheet: Workbook):
-    for dim in ("B", "C", "D", "E", "F", "G"):
-        sheet.column_dimensions[dim] = 23
+def prettify_sheet(sheet: Worksheet):
+    for dim in ("B", "C", "D", "E", "F", "G", "H"):
+        sheet.column_dimensions[dim].width = 23
 
-    for num in range(1, len(sheet.rows) + 1):
-        for letter in ("B", "C", "D", "E", "F", "G"):
+    for num in range(1, sheet.max_row + 1):
+        for letter in ("B", "C", "D", "E", "F", "G", "H"):
             sheet[f"{letter}{num}"].alignment = Alignment(horizontal="center")
 
-            if letter in ("C", "D", "E"):
-                sheet[f"{letter}{i}"].number_format = cellFormat[2]
+            if letter in ("D", "E", "F"):
+                sheet[f"{letter}{num}"].number_format = cellFormat[2]
     
     try:
-        book.save("orders.xlsx")
+        sheet.parent.save("output/orders.xlsx")
         print("Result spreadsheet is ready!")
+        print("It contains orders about last 30 days.")
+        print("No way to make bigger timestamp due to Binance restrictions.")
+        print("Thanks for understanding.")
+        print("Closing program, thanks for your usage!")
     except Exception as err:
-        logging.info("unable to save results to output xlsx")
+        logger.info("unable to save results to output xlsx")
         raise err 
 
 
 
-
-def process_orders():
-    client = Client(api_key, secret_key)
-    (start, end) = calculate_time_delta()
+def process_orders(client: Client):
+    start, end = calculate_time_delta()
 
     raw_pd = parse_json(client)
     raw_table = create_table(raw_pd)
-    not_pretty_table = rename_table(raw_table)
-    almost_pretty_table = drop_unused(not_pretty_table)
-    raw_output = table_to_excel(almost_pretty_table, start, end)
+    rename_table(raw_table)
+    drop_unused(raw_table)
+    raw_output = table_to_excel(raw_table, start, end)
 
-    loaded_raw = load_sheet(raw_output)
-    pretty_table = prettify_sheet(loaded_raw)
+    raw_sheet = load_sheet(raw_output)
+    prettify_sheet(raw_sheet)
