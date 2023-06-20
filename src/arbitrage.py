@@ -6,8 +6,13 @@ REQ_URL = "https://api.binance.com/api/v3/exchangeInfo?symbol="
 
 
 def pair_info() -> (str, str):
-    user_text = "Enter your currency pair (from Spot trading, e.g. USDT/RUB): "
-    (curr_left, curr_right) = input(user_text).split()
+    user_text = "Enter your currency pair (from Spot trading, e.g. USDT/BTC): "
+
+    try:
+        (curr_left, curr_right) = input(user_text).split("/")
+    except ValueError as err:
+        print("Invalid input, please enter a currency with with a `/` separator, e.g. USDT/BTC")
+        return pair_info()
 
     return (curr_left, curr_right)
 

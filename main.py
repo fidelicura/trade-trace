@@ -16,7 +16,7 @@ def main():
     print("It's time to choose!\n1 - orders only;\n2 - arbitrage only;\n3 - both;")
 
     try:
-        user_req = int(input())
+        user_req = int(input("Your variant: "))
         print("Yes, Boss! Processing.")
     except ValueError:
         raise InvalidInput("Not a number. Input number from 1 to 3.")
